@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BunaPay Bot — Phase 1 Mockup</title>
+<style>
+  :root {
+    --bg: #f1ece3;
+    --phone-bg: #ffffff;
+    --coffee: #3E2723;
+    --espresso: #2b1d14;
+    --gold: #C9A84C;
+    --gold-deep: #a07c1f;
+    --gold-bright: #e8c25c;
+    --ink: #241a12;
+    --dim: #8f867a;
+    --border: #e9e3d8;
+    --bubble-bot: #f1ede5;
+    --green: #1e9e50;
+    --red: #e0453c;
+    --blue: #0a84ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(160deg, #efe9df 0%, #e3dbc9 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    padding: 24px 12px;
+  }
+  .wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  h1 { font-size: 17px; font-weight: 600; color: var(--gold-deep); letter-spacing: .5px; }
+  .sub { font-size: 12px; color: var(--dim); text-align: center; max-width: 520px; }
+  .phone {
+    width: 402px;
+    max-width: 100%;
+    height: 800px;
+    background: var(--phone-bg);
+    border: 1.5px solid #d8d0c2;
+    border-radius: 36px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(90, 70, 40, .28);
+    position: relative;
+  }
+  /* Dynamic island hint */
+  .phone::before {
+    content: ''; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 24px; background: #000; border-radius: 14px; z-index: 5;
+  }
+  /* Header */
+  .topbar {
+    padding: 44px 18px 10px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,.85);
+  }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+    object-fit: contain; padding: 4px;
+    box-shadow: 0 4px 14px rgba(201,168,76,.4);
+    flex-shrink: 0;
+  }
+  .botinfo { flex: 1; }
+  .botname { font-size: 15px; font-weight: 600; letter-spacing: .2px; color: var(--ink); }
+  .botstatus { font-size: 11.5px; color: var(--dim); }
+  .botstatus::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 5px; vertical-align: 1px; }
+  .mode-toggle { display: flex; gap: 3px; background: rgba(0,0,0,.05); border-radius: 10px; padding: 3px; }
+  .mode-toggle button { border: none; background: transparent; color: var(--dim); font-size: 11px; font-weight: 500; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+  .mode-toggle button.active { background: var(--gold); color: #241a10; font-weight: 700; }
+  .reset { border: 1px solid var(--border); background: transparent; color: var(--dim); font-size: 12px; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+  .reset:hover { color: var(--ink); }
+  /* Chat */
+  .chat {
+    flex: 1; overflow-y: auto; padding: 14px 14px 8px;
+    display: flex; flex-direction: column; gap: 10px;
+    background: radial-gradient(circle at 20% 0%, rgba(201,168,76,.07), transparent 45%), var(--phone-bg);
+    scrollbar-width: none;
+  }
+  .chat::-webkit-scrollbar { display: none; }
+  .msg { max-width: 84%; padding: 12px 15px; border-radius: 20px; font-size: 14px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; color: var(--ink); }
+  .msg.bot { background: var(--bubble-bot); align-self: flex-start; border-bottom-left-radius: 6px; border: 1px solid rgba(0,0,0,.04); }
+  .msg.user { background: linear-gradient(135deg, #e8c25c, #d8b85e); align-self: flex-end; border-bottom-right-radius: 6px; color: #241a10; }
+  .msg .time { display: block; font-size: 10px; color: var(--dim); text-align: right; margin-top: 6px; opacity: .8; }
+  .msg .ok { color: var(--green); }
+  .msg .warn { color: var(--gold-deep); }
+  .msg .bad { color: var(--red); }
+  .msg .info { color: var(--blue); }
+  /* Status pills */
+  .status { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
+  .status.gold { background: rgba(201,168,76,.16); color: var(--gold-deep); border: 1px solid rgba(201,168,76,.45); }
+  .status.green { background: rgba(30,158,80,.12); color: #177a3c; border: 1px solid rgba(30,158,80,.4); }
+  .status.red { background: rgba(224,69,60,.12); color: var(--red); border: 1px solid rgba(224,69,60,.4); }
+  /* Compact rate card — Apple-style container */
+  .wallet-card {
+    position: relative; overflow: hidden;
+    background: linear-gradient(150deg, #f8eed2 0%, #f1dcae 60%, #e7cb8f 100%);
+    border: 1px solid rgba(201,168,76,.55);
+    border-radius: 18px; padding: 12px 16px; margin-bottom: 8px;
+    box-shadow: 0 6px 18px rgba(150,110,30,.15), inset 0 1px 0 rgba(255,255,255,.7);
+    color: #241a10;
+  }
+  .wallet-card .brand-row { display: flex; align-items: center; gap: 6px; position: relative; z-index: 1; }
+  .wallet-card .mini { width: 18px; height: 18px; border-radius: 5px; object-fit: contain; }
+  .wallet-card .brand { font-size: 11px; font-weight: 700; letter-spacing: .4px; color: #4a3213; }
+  .wallet-card .lbl { font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; color: #8a6d2f; font-weight: 700; margin-top: 6px; position: relative; z-index: 1; }
+  .wallet-card .rate { font-size: 21px; font-weight: 800; color: #241a10; margin-top: 1px; letter-spacing: .3px; white-space: nowrap; line-height: 1.2; position: relative; z-index: 1; }
+  .wallet-card .rate b { color: #241a10; }
+  /* Payment path card */
+  .pay-card {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    background: linear-gradient(135deg, rgba(201,168,76,.18), rgba(201,168,76,.06));
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1.5px solid rgba(201,168,76,.55); border-radius: 16px;
+    padding: 11px 14px; margin-top: 8px;
+    box-shadow: 0 4px 14px rgba(150,110,30,.10);
+  }
+  .pay-card .step {
+    font-size: 11px; font-weight: 700; color: var(--dim);
+    letter-spacing: .8px; text-transform: uppercase; white-space: nowrap;
+    line-height: 1.2; font-variant-numeric: tabular-nums;
+  }
+  .pay-card .step.final { color: var(--gold-deep); font-weight: 800; }
+  .pay-card .arrow { color: var(--gold-deep); font-size: 13px; font-weight: 800; flex-shrink: 0; }
+  /* Quote card — iOS Settings-style rows */
+  .quote-box { background: rgba(201,168,76,.1); border: 1px solid rgba(201,168,76,.45); border-radius: 16px; padding: 6px 14px; margin: 8px 0; }
+  .quote-box .row { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; font-size: 13.5px; }
+  .quote-box .row > span:first-child { color: var(--dim); font-weight: 500; }
+  .quote-box .row .val { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .quote-box .row.total { border-top: 1px solid rgba(201,168,76,.35); margin-top: 3px; padding-top: 9px; }
+  .quote-box .row.total .val { font-size: 17px; font-weight: 800; color: var(--gold-deep); }
+  /* Uploaded screenshot card */
+  .photo {
+    background: linear-gradient(160deg, #f7f3ea 0%, #eee6d6 100%);
+    border: 1px solid var(--border); border-radius: 16px; height: 150px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; color: var(--dim); font-size: 12px; margin: 8px 0;
+    box-shadow: 0 4px 14px rgba(60,40,20,.06);
+    font-weight: 500; letter-spacing: .3px;
+  }
+  /* Keyboard */
+  .keyboard { padding: 8px 14px 12px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--border); background: linear-gradient(180deg, rgba(201,168,76,.10), rgba(255,255,255,.9) 40%); }
+  .kb-row { display: flex; gap: 12px; }
+  .kb {
+    flex: 1; border: 1px solid var(--border); background: #ffffff;
+    color: var(--ink); border-radius: 14px; padding: 13px 8px;
+    font-size: 14px; font-weight: 500; cursor: pointer; text-align: center;
+    transition: transform .12s ease, background .15s, border-color .15s;
+    font-family: inherit;
+  }
+  .kb:hover { background: #f9f5ec; border-color: var(--gold); transform: translateY(-1px); }
+  .kb:active { transform: translateY(0) scale(.98); }
+  /* Big amount tiles — Apple Wallet style */
+  .kb.tile {
+    background: rgba(255,255,255,.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: #241a12; border: 1px solid rgba(255,255,255,.85); border-radius: 22px; padding: 16px 8px 13px;
+    box-shadow: 0 8px 24px rgba(60,40,20,.12), inset 0 1px 0 rgba(255,255,255,.9);
+  }
+  .kb.tile .n { display: block; font-size: 28px; font-weight: 800; letter-spacing: .3px; line-height: 1; }
+  .kb.tile .u { display: block; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #9a7b3f; text-transform: uppercase; margin-top: 6px; }
+  .kb.tile .e { display: block; font-size: 11.5px; font-weight: 600; color: var(--dim); margin-top: 2px; }
+  .kb.tile:hover { background: rgba(255,255,255,.75); border-color: var(--gold); }
+  .kb.primary { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; color: #241a10; font-weight: 700; font-size: 15px; padding: 15px; }
+  .kb.primary:hover { background: linear-gradient(135deg, #f0cd6a, #d8b85e); border: none; }
+  .kb.info { background: rgba(201,168,76,.12); border-color: rgba(201,168,76,.55); color: var(--gold-deep); font-weight: 600; }
+  .kb.success { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; color: #241a10; font-weight: 700; }
+  .kb.success:hover { background: linear-gradient(135deg, #f0cd6a, #d8b85e); border: none; }
+  .kb.danger { background: #4a2622; border-color: #7a3a33; color: #f5f0e6; }
+  .kb.danger:hover { background: #5c2f29; border-color: var(--red); }
+  .kb.pill { border-radius: 22px; padding: 11px; font-size: 13px; }
+  .kb-label { font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); padding: 6px 4px 0; font-weight: 600; }
+  /* Services — static 2-column grid + paging (no animation; matches real Telegram) */
+  .svc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 2px 0; }
+  .svc-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: #ffffff; border: 1px solid var(--border); border-radius: 14px;
+    padding: 10px 12px; cursor: pointer; font-size: 12.5px; font-weight: 500; color: var(--ink);
+    transition: border-color .15s, background .15s; font-family: inherit;
+  }
+  .svc-chip:hover { border-color: var(--gold); background: #f9f5ec; }
+  .svc-chip .px { margin-left: auto; color: var(--gold-deep); font-weight: 700; font-size: 12.5px; }
+  .svc-ic { width: 18px; height: 18px; border-radius: 5px; object-fit: contain; flex-shrink: 0; }
+  .svc-nav { display: flex; gap: 8px; padding-top: 2px; }
+  .svc-nav button {
+    flex: 1; border: 1px solid var(--border); background: #ffffff; color: var(--ink);
+    border-radius: 14px; padding: 9px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .svc-nav button:hover { border-color: var(--gold); background: #f9f5ec; }
+  /* Input bar — iOS style */
+  .inputbar { display: none; align-items: center; gap: 10px; padding: 10px 14px 16px; background: rgba(255,255,255,.9); }
+  .inputbar.active { display: flex; }
+  .inputbar .field {
+    flex: 1; background: #f5f1e8; border: 1px solid var(--border); border-radius: 24px;
+    padding: 12px 18px; color: var(--ink); font-size: 14px; outline: none; font-family: inherit;
+  }
+  .inputbar .field:focus { border-color: var(--gold); background: #fff; }
+  .inputbar .field::placeholder { color: var(--dim); }
+  .send {
+    width: 42px; height: 42px; border-radius: 50%; border: none;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+    color: #241a10; font-size: 17px; cursor: pointer; flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(201,168,76,.35);
+  }
+  .send:hover { background: linear-gradient(135deg, #f0cd6a, #d8b85e); }
+  .stage { font-size: 11px; color: var(--dim); text-align: center; padding: 4px 0 2px; background: rgba(0,0,0,.03); letter-spacing: .3px; }
+  .stage b { color: var(--gold-deep); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="text-align:center">
+    <h1>BunaPay Bot — Phase 1 Mockup</h1>
+    <div class="sub">Apple Wallet-inspired design · light &amp; clean, coffee brand accents · click to walk the flow · Toggle User / Admin view</div>
+  </div>
+
+  <div class="phone">
+    <div class="topbar">
+      <img class="avatar" src="pics/bunapay_logo.png" alt="BunaPay logo">
+      <div class="botinfo">
+        <div class="botname">BunaPay</div>
+        <div class="botstatus">online</div>
+      </div>
+      <div class="mode-toggle">
+        <button id="modeUser" class="active">User</button>
+        <button id="modeAdmin">Admin</button>
+      </div>
+      <button class="reset" id="helpBtn" title="Help">?</button>
+      <button class="reset" id="resetBtn" title="Reset">↺</button>
+    </div>
+    <div class="chat" id="chat"></div>
+    <div class="stage" id="stage">User view · starting demo…</div>
+    <div class="keyboard" id="keyboard"></div>
+    <div class="inputbar">
+      <input class="field" id="inputField" placeholder="Message" autocomplete="off">
+      <button class="send" id="sendBtn">➤</button>
+    </div>
+  </div>
+  <div class="sub">Buttons simulate the real bot. The message bar only appears when typing is needed (custom amount, wallet, TX hash).</div>
+</div>
+
+<script>
+  const chat = document.getElementById('chat');
+  const keyboard = document.getElementById('keyboard');
+  const stage = document.getElementById('stage');
+  const inputField = document.getElementById('inputField');
+  const inputbar = document.querySelector('.inputbar');
+  const setTyping = on => inputbar.classList.toggle('active', on);
+
+  let mode = 'user';
+  let state = 'welcome';
+  let pendingWallet = false;
+  let pendingTx = false;
+  let amountUsdt = null;
+  const RATE = 110;
+
+  // Subscription services — prices live in Supabase `services` table in the real bot
+  const SERVICES = [
+    { id: 'suno', img: 'https://www.google.com/s2/favicons?domain=suno.com&sz=64', name: 'Suno AI', short: 'Suno', usdt: 10 },
+    { id: 'claude', img: 'https://www.google.com/s2/favicons?domain=claude.ai&sz=64', name: 'Claude', short: 'Claude', usdt: 20 },
+    { id: 'chatgpt', img: 'https://www.google.com/s2/favicons?domain=chatgpt.com&sz=64', name: 'ChatGPT', short: 'ChatGPT', usdt: 20 },
+    { id: 'deepseek', img: 'https://www.google.com/s2/favicons?domain=deepseek.com&sz=64', name: 'DeepSeek', short: 'DeepSeek', usdt: 10 },
+    { id: 'cursor', img: 'https://www.google.com/s2/favicons?domain=cursor.com&sz=64', name: 'Cursor', short: 'Cursor', usdt: 20 },
+    { id: 'telegram', img: 'https://www.google.com/s2/favicons?domain=telegram.org&sz=64', name: 'Telegram Premium', short: 'Telegram', usdt: 5 },
+    { id: 'kling', img: 'https://www.google.com/s2/favicons?domain=klingai.com&sz=64', name: 'Kling AI', short: 'Kling', usdt: 15 },
+  ];
+  const etb = u => (u * RATE).toLocaleString();
+
+  const time = () => new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+  function addMsg(html, sender) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + sender;
+    div.innerHTML = html + `<span class="time">${time()}</span>`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div;
+  }
+  function bot(html) { return addMsg(html, 'bot'); }
+  function user(html) { return addMsg(html, 'user'); }
+
+  function clearKeyboard() { keyboard.innerHTML = ''; }
+  function showKeyboard(rows) {
+    clearKeyboard();
+    setTyping(false);
+    rows.forEach(row => {
+      if (row && row.type === 'label') {
+        const l = document.createElement('div');
+        l.className = 'kb-label';
+        l.textContent = row.label;
+        keyboard.appendChild(l);
+        return;
+      }
+      const r = document.createElement('div');
+      r.className = 'kb-row';
+      row.forEach(b => {
+        const el = document.createElement('button');
+        el.className = 'kb ' + (b.cls || '');
+        el.innerHTML = b.label;
+        el.addEventListener('click', b.action);
+        r.appendChild(el);
+      });
+      keyboard.appendChild(r);
+    });
+  }
+
+  const SVC_PER_PAGE = 4;
+  // Static 2-col grid, paged — mirrors the real bot's inline-keyboard carousel
+  function svcBrowser(services, page) {
+    let holder = document.getElementById('svc-holder');
+    if (!holder) {
+      holder = document.createElement('div');
+      holder.id = 'svc-holder';
+      keyboard.appendChild(holder);
+    }
+    holder.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'svc-grid';
+    services.slice(page * SVC_PER_PAGE, page * SVC_PER_PAGE + SVC_PER_PAGE).forEach(s => {
+      const chip = document.createElement('button');
+      chip.className = 'svc-chip';
+      chip.innerHTML = `<img class="svc-ic" src="${s.img}" alt=""> ${s.short} <span class="px">${s.usdt}</span>`;
+      chip.addEventListener('click', () => servicePrice(s));
+      grid.appendChild(chip);
+    });
+    holder.appendChild(grid);
+    const hasMore = (page + 1) * SVC_PER_PAGE < services.length;
+    const hasBack = page > 0;
+    if (hasMore || hasBack) {
+      const nav = document.createElement('div');
+      nav.className = 'svc-nav';
+      if (hasBack) {
+        const b = document.createElement('button');
+        b.innerHTML = '&#8249; Back';
+        b.addEventListener('click', () => svcBrowser(services, page - 1));
+        nav.appendChild(b);
+      }
+      if (hasMore) {
+        const m = document.createElement('button');
+        m.innerHTML = 'More &#8250;';
+        m.addEventListener('click', () => svcBrowser(services, page + 1));
+        nav.appendChild(m);
+      }
+      holder.appendChild(nav);
+    }
+  }
+
+  function setStage(txt) { stage.innerHTML = txt; }
+
+  /* ---------------- USER FLOW ---------------- */
+  function welcome() {
+    state = 'amount';
+    setStage('User view · first screen — pick amount');
+    bot(`<div class="wallet-card"><div class="brand-row"><img class="mini" src="pics/bunapay_logo.png" alt="BunaPay"><span class="brand">BunaPay</span></div><div class="lbl">Current rate</div><div class="rate">1 USDT = <b>${RATE} ETB</b></div></div><div class="pay-card"><div class="step">Telebirr</div><div class="arrow">→</div><div class="step">BSC BEP20</div><div class="arrow">→</div><div class="step final">We confirm</div></div>`);
+    showKeyboard([
+      [{ label: `<span class="n">10</span><span class="u">USDT</span><span class="e">≈ ${etb(10)} ETB</span>`, cls: 'tile', action: () => pickAmount(10) },
+       { label: `<span class="n">20</span><span class="u">USDT</span><span class="e">≈ ${etb(20)} ETB</span>`, cls: 'tile', action: () => pickAmount(20) }],
+      [{ label: `<span class="n">50</span><span class="u">USDT</span><span class="e">≈ ${etb(50)} ETB</span>`, cls: 'tile', action: () => pickAmount(50) },
+       { label: `<span class="n">100</span><span class="u">USDT</span><span class="e">≈ ${etb(100)} ETB</span>`, cls: 'tile', action: () => pickAmount(100) }],
+      [{ label: 'Other amount (e.g. 15)', cls: 'info pill', action: customAmount }],
+      { type: 'label', label: 'Subscriptions' },
+    ]);
+    svcBrowser(SERVICES, 0);
+  }
+
+  function servicePrice(s) {
+    state = 'service';
+    setStage('User view · ' + s.name + ' price');
+    bot(`<img class="svc-ic" style="width:26px;height:26px;border-radius:7px;vertical-align:-6px;margin-right:8px;" src="${s.img}" alt=""> <b>${s.name}</b>\n\n<div class="quote-box"><div class="row"><span>USDT</span><span class="val">${s.usdt}</span></div><div class="row"><span>ETB</span><span class="val">${etb(s.usdt)}</span></div></div>\n<i>Tap below to get USDT for this subscription:</i>`);
+    showKeyboard([
+      [{ label: `Get ${s.usdt} USDT`, cls: 'primary', action: () => { amountUsdt = s.usdt; quote(); } }],
+      [{ label: 'Back', cls: 'pill', action: welcome }],
+    ]);
+  }
+
+  function customAmount() {
+    setStage('User view · typing custom amount (5–100)');
+    bot('Type any amount between <b>5</b> and <b>100</b> USDT:\n\n<i>e.g. 15 → ≈ 1,650 ETB</i>');
+    clearKeyboard();
+    setTyping(true);
+    inputField.focus();
+    state = 'customAmount';
+  }
+
+  function pickAmount(n) { amountUsdt = n; quote(); }
+
+  function quote() {
+    state = 'quote';
+    setStage('User view · quote shown');
+    bot(`<b>Your quote</b>\n\n<div class="quote-box"><div class="row"><span>USDT</span><span class="val">${amountUsdt}</span></div><div class="row"><span>Rate</span><span class="val">${RATE} ETB</span></div><div class="row total"><span>Total</span><span class="val">${etb(amountUsdt)} ETB</span></div></div>\nConfirm to continue?`);
+    showKeyboard([
+      [{ label: 'Confirm', cls: 'success', action: askWallet }],
+      [{ label: 'Change amount', cls: 'pill', action: welcome }],
+    ]);
+  }
+
+  function askWallet() {
+    state = 'wallet';
+    setStage('User view · typing BSC wallet');
+    bot('Perfect! Please send your <b>BSC (BEP20)</b> wallet address.\n\nIt starts with <b>0x</b> and is <b>42 characters</b> long — you\'ll find it in your wallet app (Trust Wallet, MetaMask).');
+    clearKeyboard();
+    setTyping(true);
+    inputField.focus();
+    pendingWallet = true;
+  }
+
+  function handleWallet(v) {
+    const ok = /^0x[a-fA-F0-9]{40}$/.test(v.trim());
+    pendingWallet = false;
+    if (!ok) {
+      bot('<span class="bad">That doesn\'t look like a valid BSC address.</span>\n\nA BSC address starts with <b>0x</b> and has exactly <b>42 characters</b>. Please check and try again:');
+      inputField.focus();
+      pendingWallet = true;
+      return;
+    }
+    bot('<span class="ok">Wallet address saved.</span>');
+    setTimeout(paymentDetails, 500);
+  }
+
+  function paymentDetails() {
+    state = 'payment';
+    setStage('User view · Telebirr payment details');
+    bot(`<b>Send your payment via Telebirr</b>\n\n<div class="quote-box"><div class="row"><span>Account</span><span class="val">BunaPay Services</span></div><div class="row"><span>Number</span><span class="val">09XX XXX XXX</span></div><div class="row total"><span>Amount</span><span class="val">${etb(amountUsdt)} ETB</span></div></div>\nOnce you've paid, tap the button and upload your payment screenshot.`);
+    showKeyboard([
+      [{ label: "I've paid — upload screenshot", cls: 'primary', action: uploadScreenshot }],
+      [{ label: 'Cancel request', cls: 'danger pill', action: cancelRequest }],
+    ]);
+  }
+
+  function uploadScreenshot() {
+    state = 'screenshot';
+    setStage('User view · screenshot uploaded');
+    user('<div class="photo">payment_screenshot.jpg</div>');
+    setTimeout(() => {
+      bot('<span class="ok">Screenshot received.</span> Creating your request…');
+      setTimeout(createRequest, 700);
+    }, 500);
+  }
+
+  function createRequest() {
+    state = 'created';
+    setStage('User view · request created');
+    bot(`<b>Request #BUN-0001 created.</b>\n\n<span class="status gold">PENDING PAYMENT</span>\n\nAmount: ${amountUsdt} USDT → ${etb(amountUsdt)} ETB\nWallet: <span class="info">0x1234…abcd</span>\n\nWe'll notify you once your payment is confirmed.`);
+    showKeyboard([
+      [{ label: 'My Requests', cls: 'pill', action: myRequests }],
+      [{ label: 'New request', cls: 'primary', action: welcome }],
+    ]);
+  }
+
+  function cancelRequest() {
+    state = 'welcome';
+    setStage('User view · request cancelled');
+    bot('<span class="warn">Request cancelled.</span> No payment was made. Anything else we can help with?');
+    showKeyboard([
+      [{ label: 'Get USDT', cls: 'primary', action: welcome }],
+    ]);
+  }
+
+  function myRequests() {
+    state = 'history';
+    setStage('User view · request history');
+    bot(`<b>My Requests</b>\n\n#BUN-0001 · 50 USDT · <span class="status gold">PENDING</span>\n#BUN-0000 · 20 USDT · <span class="status green">COMPLETED</span>`);
+    showKeyboard([
+      [{ label: 'Back', cls: 'pill', action: welcome }],
+    ]);
+  }
+
+  function howItWorks() {
+    state = 'help';
+    setStage('User view · how it works');
+    bot(`<b>How it works</b>\n\n1. Choose your USDT amount\n2. Provide your BSC wallet address\n3. Send ETB via Telebirr\n4. Upload your payment screenshot\n5. We confirm and send your USDT\n\n<i>Terms: BunaPay helps users support their digital subscriptions. We are not a financial institution.</i>`);
+    showKeyboard([
+      [{ label: 'Get USDT', cls: 'primary', action: welcome }],
+    ]);
+  }
+
+  /* ---------------- ADMIN FLOW ---------------- */
+  function adminNotification() {
+    state = 'admin';
+    setStage('Admin view · new request notification');
+    bot(`<b>New support request</b>\n\n<b>#BUN-0001</b>\n@username\n50 USDT → 5,500 ETB\n0x1234…abcd\n<span class="status gold">PENDING PAYMENT</span>`);
+    addMsg('<div class="photo">payment_screenshot.jpg · @username</div>', 'bot');
+    showKeyboard([
+      [{ label: 'Confirm Payment', cls: 'success', action: adminConfirm }],
+      [{ label: 'Complete', cls: 'info', action: adminComplete }],
+      [{ label: 'Reject', cls: 'danger', action: adminReject }],
+    ]);
+  }
+
+  function adminConfirm() {
+    setStage('Admin view · payment confirmed');
+    bot('<span class="ok">#BUN-0001 marked as PAID.</span>\n\nReady to release USDT from Binance (BSC network).\nTap <b>Complete</b> after you send it.');
+    addMsg('User notified: <i>Payment confirmed for #BUN-0001. Your USDT is on the way.</i>', 'user');
+    showKeyboard([
+      [{ label: 'Complete', cls: 'info', action: adminComplete }],
+      [{ label: 'Back', cls: 'pill', action: adminNotification }],
+    ]);
+  }
+
+  function adminComplete() {
+    setStage('Admin view · typing TX hash');
+    bot('Send the <b>BSC transaction hash</b> for #BUN-0001\n\n<i>(starts with 0x — copy it from your Binance withdrawal)</i>');
+    clearKeyboard();
+    setTyping(true);
+    inputField.focus();
+    pendingTx = true;
+  }
+
+  function handleTx(v) {
+    const ok = /^0x[a-fA-F0-9]{16,}$/.test(v.trim());
+    pendingTx = false;
+    if (!ok) {
+      bot('<span class="bad">That doesn\'t look like a transaction hash.</span> It should start with <b>0x</b>. Please paste the real one:');
+      inputField.focus();
+      pendingTx = true;
+      return;
+    }
+    bot('<b>#BUN-0001 COMPLETED.</b>\n\n<span class="status green">TX SAVED</span> · User notified.');
+    addMsg('User notified: <i>Subscription Support Complete! Your 50 USDT has been sent to 0x1234…abcd. TX: <span class="info">' + v.slice(0,14) + '…</span></i>', 'user');
+    showKeyboard([
+      [{ label: 'Next notification', cls: 'pill', action: adminNotification }],
+    ]);
+  }
+
+  function adminReject() {
+    setStage('Admin view · request rejected');
+    bot('<span class="bad">#BUN-0001 rejected.</span>\n\nUser notified.');
+    addMsg('User notified: <i>Your request #BUN-0001 was rejected. Contact support if you believe this is a mistake.</i>', 'user');
+    showKeyboard([
+      [{ label: 'Next notification', cls: 'pill', action: adminNotification }],
+    ]);
+  }
+
+  /* ---------------- INPUT / MODE / RESET ---------------- */
+  function sendInput() {
+    const v = inputField.value.trim();
+    if (!v) return;
+    user(v.replace(/</g, '&lt;'));
+    inputField.value = '';
+    if (pendingWallet) { handleWallet(v); return; }
+    if (pendingTx) { handleTx(v); return; }
+    if (state === 'customAmount') {
+      const n = parseFloat(v);
+      if (isNaN(n) || n < 5 || n > 100) {
+        bot('<span class="bad">Amount must be between 5 and 100 USDT.</span> Try again:');
+      } else {
+        bot(`<b>Amount set: ${n} USDT</b>`);
+        setTimeout(() => pickAmount(n), 500);
+      }
+      return;
+    }
+    bot('Demo mode — use the buttons below.');
+  }
+
+  document.getElementById('sendBtn').addEventListener('click', sendInput);
+  inputField.addEventListener('keydown', e => { if (e.key === 'Enter') sendInput(); });
+
+  document.getElementById('modeUser').addEventListener('click', () => {
+    mode = 'user';
+    document.getElementById('modeUser').classList.add('active');
+    document.getElementById('modeAdmin').classList.remove('active');
+    chat.innerHTML = ''; clearKeyboard();
+    welcome();
+  });
+  document.getElementById('modeAdmin').addEventListener('click', () => {
+    mode = 'admin';
+    document.getElementById('modeAdmin').classList.add('active');
+    document.getElementById('modeUser').classList.remove('active');
+    chat.innerHTML = ''; clearKeyboard();
+    adminNotification();
+  });
+  document.getElementById('helpBtn').addEventListener('click', howItWorks);
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    chat.innerHTML = ''; clearKeyboard(); inputField.value = '';
+    pendingWallet = pendingTx = false; state = 'welcome';
+    if (mode === 'user') welcome(); else adminNotification();
+  });
+
+  welcome();
+</script>
+</body>
+</html>
