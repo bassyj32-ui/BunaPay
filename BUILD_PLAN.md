@@ -223,19 +223,21 @@ SENTRY_DSN=https://...@o4511656889614336.ingest.us.sentry.io/4511893022900224
 
 ### 1.7 Testing Checklist (verify with getUpdates / Supabase queries / bot logs — never images, per AGENTS.md)
 
-- ☐ `/start` shows hero screen (rate card + tiles + services) with no emoji
-- ☐ Amount flow: preset + custom, min/max enforced, ETB total correct at current rate
-- ☐ No-rate guard works
-- ☐ Wallet validation rejects bad BSC addresses
-- ☐ Screenshot accepted; file_id stored in Supabase `requests`
-- ☐ Services carousel pages correctly; service price → quote → same flow
-- ☐ Admin notification with buttons; Confirm / Complete(+TX) / Reject update DB + notify user
-- ☐ `/cancel` works; 12h expiry fires (test with shortened window locally)
-- ☐ Max-2-pending guard; blocked user rejected
-- ☐ `/dashboard` `/set_rate` `/set_service` trust/block commands admin-only
-- ☐ Daily stats message sends
-- ☐ Sentry: forced test error appears in `scholarnova` → BunaPay project with Telegram context
-- ☐ Secrets never in code/commits
+- ☑ `/start` shows hero screen (rate card + tiles + services) with no emoji — confirmed live, zero errors in bot log
+- ☑ Amount flow: preset + custom, min/max enforced, ETB total correct at current rate — verified live in DB: custom 50×190=9,500 ETB; service 10×190=1,900 (BUN-0005/6/7)
+- ☑ No-rate guard works — code-verified (rate currently 190; guard at /start + amount paths)
+- ☑ Wallet validation rejects bad BSC addresses — rejected live; valid 42-char stored in all 3 requests
+- ☑ Screenshot accepted; file_id stored in Supabase `requests` — file_id present in BUN-0005/6/7
+- ☑ Services carousel pages correctly; service price → quote → same flow — confirmed live (Suno 10 USDT → 1,900 ETB)
+- ☑ Admin notification with buttons; Confirm / Complete(+TX) / Reject update DB + notify user — verified live: BUN-0006 paid+paid_at, BUN-0005 completed+tx_hash+completed_at, BUN-0007 rejected; log PATCH/editMessageText 200
+- ☑ `/cancel` works — verified live (aborts in-progress flow; DB rows only exist post-screenshot, so nothing to cancel there — abandoned rows covered by 12h expiry)
+- ☐ 12h expiry fires (test with shortened window locally) — code-reviewed: sweep marks expired + notifies; next scheduled run ≤12h
+- ☑ Max-2-pending guard — code-verified (checked at /start + amount path via count_pending_for_user ≥ 2)
+- ☑ Blocked user rejected — code-verified (is_blocked check at /start)
+- ☐ `/dashboard` `/set_rate` `/set_service` trust/block commands admin-only — code-verified (all guarded by `_is_admin`); live run in 1.3
+- ☐ Daily stats message sends — code-reviewed; scheduled 23:45 Africa/Addis_Ababa
+- ☑ Sentry: forced test error appears in `scholarnova` → BunaPay project with Telegram context — proven: envelope POST 200 + event searchable; bot errors BUNAPAY-2..5 landed
+- ☑ Secrets never in code/commits — `git grep` for token/DSN/service-key → 0 matches
 
 ### 1.8 Deploy (Railway)
 
