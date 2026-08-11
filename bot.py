@@ -659,6 +659,13 @@ async def daily_stats(context: ContextTypes.DEFAULT_TYPE) -> None:
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.exception("Unhandled error while processing update")
     if config.sentry_enabled:
+        if isinstance(update, Update) and update.effective_user:
+            sentry_sdk.get_current_scope().set_user(
+                {
+                    "id": str(update.effective_user.id),
+                    "username": update.effective_user.username,
+                }
+            )
         sentry_sdk.capture_exception(context.error, extra={"update": repr(update)})
     try:
         if isinstance(update, Update) and update.effective_message:

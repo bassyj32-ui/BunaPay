@@ -219,6 +219,7 @@ SENTRY_DSN=https://...@o4511656889614336.ingest.us.sentry.io/4511893022900224
 
 - `SENTRY_DSN` optional — unset → bot runs without Sentry.
 - Sentry init at top of `bot.py`; scope set with user telegram_id + request id; Telegram update context attached as extra data.
+- Verified live: DSN/ingest/project proven via manual envelope POST (HTTP 200) → event `2a334f0d...` searchable in `scholarnova` → BunaPay; bot errors land with stack traces (BUNAPAY-2..5); error handler sets user scope (telegram id + username).
 
 ### 1.7 Testing Checklist (verify with getUpdates / Supabase queries / bot logs — never images, per AGENTS.md)
 
