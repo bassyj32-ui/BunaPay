@@ -202,8 +202,8 @@ Tasks:
 
 ### 1.5 Assets & Polish
 
-- ☐ Optimize `pics/bunapay_logo.png` (~1.5MB) and `pics/bunapay_hero.png` (~1.9MB) → web copies < 400KB each (via script; never by viewing images)
-- ☐ `messages.py` composer: consistent section builders (rate card, quote rows, status label, pay path) so every screen matches the approved design language
+- ☑ Optimize `pics/bunapay_logo.png` (~1.5MB) and `pics/bunapay_hero.png` (~1.9MB) → web copies < 400KB each (via script; never by viewing images) — verified: logo 355KB, hero 372KB (`compress_assets.py`)
+- ☑ `messages.py` composer: consistent section builders (rate card, quote rows, status label, pay path) so every screen matches the approved design language — built in 1.2, verified live
 
 ### 1.6 Environment Variables (`.env`)
 
