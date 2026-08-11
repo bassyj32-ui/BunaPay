@@ -105,11 +105,11 @@ d:\trae\BunaPay\
 
 ### 1.0 Foundation
 
-- ☐ Init git repo, `.gitignore` (excludes `.env`, `pics/` originals if needed), commit scaffold
-- ☐ Create `.env.template` with all keys (section 1.6) — commit it
-- ☐ `requirements.txt`: `python-telegram-bot`, `supabase`, `python-dotenv`, `sentry-sdk`
-- ☐ `config.py` — loads env, fails fast on missing required keys
-- ☐ Push scaffold to `bassyj32-ui/BunaPay`
+- ☑ Init git repo, `.gitignore` (excludes `.env`, `pics/` originals if needed), commit scaffold
+- ☑ Create `.env.template` with all keys (section 1.6) — commit it
+- ☑ `requirements.txt`: `python-telegram-bot`, `supabase`, `python-dotenv`, `sentry-sdk`
+- ☑ `config.py` — loads env, fails fast on missing required keys (verified: raises `ConfigError` on missing vars)
+- ☑ Push scaffold to `bassyj32-ui/BunaPay` (main @ 72133eb)
 
 ### 1.1 Database (`schema.sql`)
 
@@ -165,9 +165,9 @@ Seed the 7 services:
 `Suno AI 10 · Claude 20 · ChatGPT 20 · DeepSeek 10 · Cursor 20 · Telegram Premium 5 · Kling AI 15` (USDT).
 
 Tasks:
-- ☐ Write `schema.sql` (4 tables + sequences + seed)
-- ☐ Apply to Supabase via MCP; verify tables exist (structured query, not guesses)
-- ☐ `db.py` — supabase client + helpers: get_rate, set_rate, create_user, create_request, update_request, list_pending, get_user, service queries
+- ☑ Write `schema.sql` (4 tables + sequences + seed) — `supabase/migrations/0001_init.sql` + `0002_functions.sql` (atomic stats RPC)
+- ☑ Apply to Supabase via MCP; verify tables exist (verified: users, requests, rate_settings, services + FK + status check + RLS)
+- ☑ `db.py` — supabase client + helpers (users, rate, requests, services). Smoke-tested live: rate=110, 7 services, create/update/cleanup OK
 
 ### 1.2 User Flows (in `bot.py`)
 
