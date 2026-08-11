@@ -5,6 +5,7 @@ supabase-py returns rows as plain dicts.
 """
 
 from datetime import datetime, timedelta, timezone
+from time import monotonic
 from typing import Any
 
 from supabase import Client, create_client
@@ -15,18 +16,28 @@ client: Client = create_client(config.supabase_url, config.supabase_service_key)
 
 REQUEST_STATUSES = ("pending", "paid", "completed", "cancelled", "rejected", "expired")
 
+# Short-TTL in-memory caches: rate and services are read on nearly every
+# interaction but change rarely. Saves a Supabase round trip per button press.
+_RATE_TTL = 30.0
+_SVC_TTL = 60.0
+_RATE_CACHE: dict = {"t": 0.0, "v": None}
+_SVC_CACHE: dict = {"t": 0.0, "v": None}
+
+
+def _fresh(cache: dict, ttl: float) -> bool:
+    return monotonic() - cache["t"] < ttl
+
 # ---------- users ----------
 
 
 def get_or_create_user(telegram_id: int, username: str | None, first_name: str | None) -> dict:
-    """Fetch a user, creating the row on first contact."""
+    """Fetch a user, creating the row on first contact (upsert returns the row)."""
     rows = (
         client.table("users")
         .upsert(
             {"telegram_id": telegram_id, "username": username, "first_name": first_name},
             on_conflict="telegram_id",
         )
-        .select("*")
         .execute()
         .data
     )
@@ -46,6 +57,29 @@ def set_user_trusted(telegram_id: int, trusted: bool) -> None:
     client.table("users").update({"is_trusted": trusted}).eq("telegram_id", telegram_id).execute()
 
 
+def get_user_by_username(username: str) -> dict | None:
+    rows = (
+        client.table("users")
+        .select("*")
+        .eq("username", username)
+        .limit(1)
+        .execute()
+        .data
+    )
+    return rows[0] if rows else None
+
+
+def list_trusted_users() -> list[dict]:
+    return (
+        client.table("users")
+        .select("telegram_id, username, first_name, created_at")
+        .eq("is_trusted", True)
+        .order("created_at")
+        .execute()
+        .data
+    )
+
+
 def bump_user_stats(telegram_id: int, etb: float) -> None:
     """Increment total_requests / total_spent_etb after a completed trade.
 
@@ -61,7 +95,9 @@ def bump_user_stats(telegram_id: int, etb: float) -> None:
 
 
 def get_rate() -> float | None:
-    """Current USDT->ETB rate (most recent rate_settings row)."""
+    """Current USDT->ETB rate (most recent rate_settings row), TTL-cached."""
+    if _fresh(_RATE_CACHE, _RATE_TTL):
+        return _RATE_CACHE["v"]
     rows = (
         client.table("rate_settings")
         .select("*")
@@ -70,7 +106,9 @@ def get_rate() -> float | None:
         .execute()
         .data
     )
-    return float(rows[0]["usdt_to_etb"]) if rows else None
+    rate = float(rows[0]["usdt_to_etb"]) if rows else None
+    _RATE_CACHE.update(t=monotonic(), v=rate)
+    return rate
 
 
 def set_rate(usdt_to_etb: float, updated_by: int) -> float:
@@ -81,6 +119,7 @@ def set_rate(usdt_to_etb: float, updated_by: int) -> float:
         .execute()
         .data
     )
+    _RATE_CACHE.update(t=0.0, v=None)  # invalidate
     return float(rows[0]["usdt_to_etb"])
 
 
@@ -105,7 +144,6 @@ def create_request(
                 "payment_screenshot_file_id": payment_screenshot_file_id,
             }
         )
-        .select("*")
         .execute()
         .data
     )
@@ -120,7 +158,7 @@ def get_request(request_id: str) -> dict | None:
 def update_request(request_id: str, **fields: Any) -> dict | None:
     """Update a request (status, tx_hash, timestamps, notes...)."""
     rows = (
-        client.table("requests").update(fields).eq("id", request_id).select("*").execute().data
+        client.table("requests").update(fields).eq("id", request_id).execute().data
     )
     return rows[0] if rows else None
 
@@ -186,7 +224,9 @@ def list_requests_since(since: datetime) -> list[dict]:
 
 
 def list_active_services() -> list[dict]:
-    return (
+    if _fresh(_SVC_CACHE, _SVC_TTL):
+        return _SVC_CACHE["v"]
+    rows = (
         client.table("services")
         .select("*")
         .eq("active", True)
@@ -194,6 +234,8 @@ def list_active_services() -> list[dict]:
         .execute()
         .data
     )
+    _SVC_CACHE.update(t=monotonic(), v=rows)
+    return rows
 
 
 def get_service(service_id: str) -> dict | None:
@@ -203,5 +245,8 @@ def get_service(service_id: str) -> dict | None:
 
 def upsert_service(service: dict[str, Any]) -> dict:
     """Insert or replace a service by id (used by /set_service)."""
-    rows = client.table("services").upsert(service, on_conflict="id").select("*").execute().data
-    return rows[0]
+    client.table("services").upsert(service, on_conflict="id").execute()
+    _SVC_CACHE.update(t=0.0, v=None)  # invalidate
+    stored = get_service(service["id"])
+    assert stored is not None
+    return stored

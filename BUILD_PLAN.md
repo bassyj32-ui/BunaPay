@@ -171,34 +171,34 @@ Tasks:
 
 ### 1.2 User Flows (in `bot.py`)
 
-- ☐ `/start` → **hero screen straight to work** (no menu): rate card + pay-path line + amount tiles + services browser. HTML version of the approved mockup first screen
-- ☐ Amount tiles: `10 / 20 / 50 / 100 USDT` (2 per row) + `Other amount`
-- ☐ Custom amount: min 5 / max 100 USDT enforced
-- ☐ Quote message: iOS-style rows (USDT / Rate / Total emphasized)
-- ☐ Ask BSC wallet → validate `0x` + 40 hex
-- ☐ Telebirr payment details (name/number from env) → wait for photo upload
-- ☐ Screenshot stored as file_id → create request (status `pending`, id `BUN-####`)
-- ☐ **Services browser**: paged carousel, 2 columns/page + `More ›` / `‹ Back`; tapping a service shows its price + `Get N USDT` (quote continues the same flow)
-- ☐ My Requests (history with status labels)
-- ☐ How it works + terms line
-- ☐ Blocked users rejected at `/start`; max **2 pending** per user
+- ☑ `/start` → **hero screen straight to work** (no menu): rate card + pay-path line + amount tiles + services browser. HTML version of the approved mockup first screen (verified live)
+- ☑ Amount tiles: `10 / 20 / 50 / 100 USDT` (2 per row) + `Other amount` (tiles verified live)
+- ☐ Custom amount: min 5 / max 100 USDT enforced (coded — verify in 1.7)
+- ☑ Quote message: iOS-style rows (USDT / Rate / Total emphasized) (verified live)
+- ☑ Ask BSC wallet → validate `0x` + 40 hex (verified live)
+- ☑ Telebirr payment details (name/number from env) → wait for photo upload (verified live)
+- ☑ Screenshot stored as file_id → create request (status `pending`, id `BUN-####`) (verified live: BUN-0005)
+- ☐ **Services browser**: paged carousel, 2 columns/page + `More ›` / `‹ Back`; tapping a service shows its price + `Get N USDT` (coded — paging verify in 1.7)
+- ☐ My Requests (history with status labels) (coded — verify in 1.7)
+- ☐ How it works + terms line (coded — verify in 1.7)
+- ☑ Blocked users rejected at `/start` (coded); max **2 pending** per user (guard verified live)
 
 ### 1.3 Admin Flows (restricted to `TELEGRAM_ADMIN_ID`)
 
-- ☐ New-request notification: details + screenshot + inline buttons `Confirm Payment` / `Complete` / `Reject`
-- ☐ Confirm → `paid`, user notified
-- ☐ Complete → prompts TX hash (validate `0x` + 16+ hex) → `completed`, user notified
-- ☐ Reject → `rejected`, user notified
-- ☐ `/dashboard` — all pending requests
-- ☐ `/set_rate 110` — updates rate for future requests
-- ☐ `/set_service` — add / update / deactivate a service (name, icon, USDT price)
-- ☐ `/trusted_list` `/add_trusted @u` `/remove_trusted @u` `/block_user @u` `/unblock_user @u`
+- ☑ New-request notification: details + screenshot + inline buttons `Confirm Payment` / `Complete` / `Reject` (verified live: photo + text card with buttons)
+- ☑ Confirm → `paid`, user notified (DB update proven live; user notify coded)
+- ☑ Complete → prompts TX hash (validate `0x` + 16+ hex) → `completed`, user notified (verified live: BUN-0005 completed + thanks message)
+- ☐ Reject → `rejected`, user notified (coded — verify in 1.7)
+- ☐ `/dashboard` — all pending requests (coded — verify in 1.7)
+- ☐ `/set_rate 110` — updates rate for future requests (coded — verify in 1.7)
+- ☐ `/set_service` — add / update / deactivate a service (name, icon, USDT price) (coded — verify in 1.7)
+- ☐ `/trusted_list` `/add_trusted @u` `/remove_trusted @u` `/block_user @u` `/unblock_user @u` (coded — verify in 1.7)
 
 ### 1.4 Automation & Guards (JobQueue)
 
-- ☐ 12h expiry sweep (every 10 min): pending > 12h → `expired`, notify user + admin
-- ☐ Daily stats (23:45 Africa/Addis_Ababa): new/pending/completed counts, ETB volume, completion rate → admin chat
-- ☐ Rate guard: no rate set → bot tells user "unavailable", reminds admin via `/set_rate`
+- ☑ 12h expiry sweep (every 10 min): pending > 12h → `expired`, notify user + admin (job scheduled + ran clean; expiry action verify in 1.7)
+- ☐ Daily stats (23:45 Africa/Addis_Ababa): new/pending/completed counts, ETB volume, completion rate → admin chat (scheduled — first fire 23:45)
+- ☐ Rate guard: no rate set → bot tells user "unavailable", reminds admin via `/set_rate` (coded — verify in 1.7)
 
 ### 1.5 Assets & Polish
 
