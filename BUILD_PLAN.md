@@ -252,7 +252,7 @@ SENTRY_DSN=https://...@o4511656889614336.ingest.us.sentry.io/4511893022900224
 - ☑ `webapp/` static site (index.html + app.js + app.css + railway.json): service grid, amount presets/custom, BSC wallet, submit via `Telegram.WebApp.sendData`
 - ☑ Bot: `MINI_APP_URL` (optional env) + "Open BunaPay App" WebApp button on hero; payload embeds current rate + active services
 - ☑ Bot: `webapp_order_received` validates rate / min-max / wallet / pending-guard / service, then prompts for screenshot; `mini_screenshot_received` reuses create+notify path
-- ☐ Deploy webapp as separate Railway service (Root Directory = `webapp`) → set `MINI_APP_URL` on bot service → live test order
+- ☑ Deploy: single Railway service hosts bot + webapp (`start_static_server` serves `webapp/` on `PORT`, default 3000); `MINI_APP_URL` = bot service domain
 
 ---
 
