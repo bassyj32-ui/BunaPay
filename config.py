@@ -56,6 +56,7 @@ class Config:
 
         # Optional
         self.sentry_dsn: str | None = _optional("SENTRY_DSN")
+        self.mini_app_url: str | None = _optional("MINI_APP_URL")
 
     @property
     def sentry_enabled(self) -> bool:

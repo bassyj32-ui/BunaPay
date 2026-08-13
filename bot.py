@@ -8,13 +8,15 @@ Guards: blocked users, min/max amount, max pending per user, rate check.
 from __future__ import annotations
 
 import html
+import json
 import logging
 import re
 import sys
+import urllib.parse
 from datetime import datetime, timedelta, time as dtime, timezone
 from zoneinfo import ZoneInfo
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
 from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
@@ -101,6 +103,23 @@ def _btn(text: str, data: str) -> InlineKeyboardButton:
 # ---------- keyboards ----------
 
 
+def _mini_app_button(rate: float | None) -> InlineKeyboardButton | None:
+    """WebApp button that opens the order form; None when MINI_APP_URL unset."""
+    if not config.mini_app_url:
+        return None
+    services = db.list_active_services()
+    payload = {
+        "r": rate,
+        "s": [{"i": s["id"], "n": s["name"], "p": float(s["usdt_price"])} for s in services],
+        "min": MIN_USDT,
+        "max": MAX_USDT,
+    }
+    url = f"{config.mini_app_url}?d=" + urllib.parse.quote(
+        json.dumps(payload, separators=(",", ":")), safe=""
+    )
+    return InlineKeyboardButton("Open BunaPay App", web_app=WebAppInfo(url=url))
+
+
 def hero_keyboard(services: list[dict], page: int = 0) -> InlineKeyboardMarkup:
     rows = [
         [_btn("10 USDT", "amt:10"), _btn("20 USDT", "amt:20")],
@@ -123,6 +142,9 @@ def hero_keyboard(services: list[dict], page: int = 0) -> InlineKeyboardMarkup:
         nav.append(_btn("More ›", f"{CB['SVC_PAGE']}:{page + 1}"))
     if nav:
         rows.append(nav)
+    app_btn = _mini_app_button(db.get_rate())
+    if app_btn:
+        rows.append([app_btn])
     rows.append([_btn("My requests", CB["MYREQ"]), _btn("How it works", CB["HOWTO"])])
     return InlineKeyboardMarkup(rows)
 
@@ -377,6 +399,91 @@ async def _notify_admin(
         parse_mode=ParseMode.HTML,
         reply_markup=admin_keyboard(req["id"]),
     )
+
+
+# ---------- mini app flow ----------
+
+
+async def webapp_order_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Mini App submit → validate → ask for payment screenshot (then existing flow)."""
+    query = update.callback_query
+    if not query.web_app_data:
+        # No active conversation for app orders — keep the Cancel button working.
+        if query.data == CB["CANCEL"] and context.user_data.get("mini_app"):
+            await query.answer()
+            context.user_data.clear()
+            await query.edit_message_text("Cancelled.")
+        return
+    await query.answer()
+    uid = query.from_user.id
+    try:
+        data = json.loads(query.web_app_data.data)
+        usdt = float(data.get("usdt", 0))
+        wallet = str(data.get("wallet", "")).strip()
+        svc_id = str(data.get("service") or "").strip() or None
+    except (ValueError, TypeError, json.JSONDecodeError):
+        await context.bot.send_message(uid, "Invalid order data. Please try again in the app.")
+        return
+
+    rate = db.get_rate()
+    if rate is None:
+        await context.bot.send_message(uid, "Rates are being updated — try again shortly.")
+        return
+    if not (MIN_USDT <= usdt <= MAX_USDT):
+        await context.bot.send_message(
+            uid, f"Amount must be between {MIN_USDT:g} and {MAX_USDT:g} USDT."
+        )
+        return
+    if not BSC_WALLET_RE.match(wallet):
+        await context.bot.send_message(
+            uid,
+            "That doesn't look like a valid BSC address. It must be 0x followed by 40 hex characters. "
+            "Please reopen the app and fix the address.",
+        )
+        return
+    if db.count_pending_for_user(uid) >= MAX_PENDING:
+        await context.bot.send_message(
+            uid, f"You have {MAX_PENDING} pending orders. Wait for them to finish."
+        )
+        return
+    if svc_id:
+        svc = db.get_service(svc_id)
+        if not svc or not svc["active"]:
+            await context.bot.send_message(uid, "This service is no longer available.")
+            return
+
+    _set_amount(context, usdt, rate)
+    context.user_data["wallet"] = wallet
+    context.user_data["mini_app"] = True
+    await context.bot.send_message(
+        uid,
+        f"Order received — <b>{usdt:g} USDT</b> ≈ <b>{context.user_data['amount_etb']:,.0f} ETB</b>.\n\n"
+        "Upload your Telebirr payment screenshot:",
+        parse_mode=ParseMode.HTML,
+        reply_markup=single_cancel_keyboard(),
+    )
+
+
+async def mini_screenshot_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Screenshot for an order placed via the Mini App (no active conversation)."""
+    if "amount_usdt" not in context.user_data or not context.user_data.get("mini_app"):
+        return
+    file_id = update.message.photo[-1].file_id
+    user = db.get_or_create_user(
+        update.effective_user.id, update.effective_user.username, update.effective_user.first_name
+    )
+    req = db.create_request(
+        user_id=user["telegram_id"],
+        amount_usdt=context.user_data["amount_usdt"],
+        amount_etb=context.user_data["amount_etb"],
+        wallet_address=context.user_data["wallet"],
+        payment_screenshot_file_id=file_id,
+    )
+    context.user_data.clear()
+    await update.message.reply_text(
+        m.request_created(req), parse_mode=ParseMode.HTML
+    )
+    await _notify_admin(update, context, req, user, file_id)
 
 
 async def my_requests(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -734,6 +841,10 @@ def build_app() -> Application:
     app.add_handler(CallbackQueryHandler(services_page, pattern=rf"^{CB['SVC_PAGE']}:\d+$"))
     app.add_handler(CallbackQueryHandler(admin_confirm, pattern=r"^adm:confirm:"))
     app.add_handler(CallbackQueryHandler(admin_reject, pattern=r"^adm:reject:"))
+    # Mini App: web_app_data callbacks carry no data, so this must be the last
+    # callback handler (it only fires for queries no pattern matched above).
+    app.add_handler(CallbackQueryHandler(webapp_order_received))
+    app.add_handler(MessageHandler(filters.PHOTO, mini_screenshot_received))
     app.add_error_handler(error_handler)
     return app
 

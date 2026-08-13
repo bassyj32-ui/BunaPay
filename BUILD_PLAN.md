@@ -247,6 +247,13 @@ SENTRY_DSN=https://...@o4511656889614336.ingest.us.sentry.io/4511893022900224
 - ☑ Deploy; local bot killed (0 processes) so no getUpdates 409 conflict; monitoring = Railway auto-restart (`ON_FAILURE`) + Sentry alerts — UptimeRobot N/A (polling bot has no HTTP endpoint)
 - ☑ Supabase hosts DB (persistent across redeploys)
 
+### 1.9 Telegram Mini App (order form)
+
+- ☑ `webapp/` static site (index.html + app.js + app.css + railway.json): service grid, amount presets/custom, BSC wallet, submit via `Telegram.WebApp.sendData`
+- ☑ Bot: `MINI_APP_URL` (optional env) + "Open BunaPay App" WebApp button on hero; payload embeds current rate + active services
+- ☑ Bot: `webapp_order_received` validates rate / min-max / wallet / pending-guard / service, then prompts for screenshot; `mini_screenshot_received` reuses create+notify path
+- ☐ Deploy webapp as separate Railway service (Root Directory = `webapp`) → set `MINI_APP_URL` on bot service → live test order
+
 ---
 
 ## Phase 2 — Trusted Suppliers + Commission (PLANNED — details on start)
