@@ -42,7 +42,9 @@ if config.sentry_enabled:
     sentry_sdk.init(dsn=config.sentry_dsn, traces_sample_rate=0.1)
 
 logging.basicConfig(
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s", level=logging.INFO
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    level=logging.INFO,
+    stream=sys.stdout,
 )
 logger = logging.getLogger("bunapay")
 
@@ -517,13 +519,14 @@ async def dashboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not reqs:
         await update.message.reply_text("No pending requests.")
         return
-    lines = ["<b>PENDING REQUESTS</b>", ""]
     for r in reqs:
-        lines.append(
-            f"{r['id']} · {float(r['amount_usdt']):g} USDT · "
+        text = (
+            f"<b>{r['id']}</b> · {float(r['amount_usdt']):g} USDT · "
             f"{float(r['amount_etb']):,.0f} ETB · <b>{r['status'].upper()}</b>"
         )
-    await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.HTML)
+        await update.message.reply_text(
+            text, parse_mode=ParseMode.HTML, reply_markup=admin_keyboard(r["id"])
+        )
 
 
 async def set_rate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
