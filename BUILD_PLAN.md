@@ -242,10 +242,10 @@ SENTRY_DSN=https://...@o4511656889614336.ingest.us.sentry.io/4511893022900224
 
 ### 1.8 Deploy (Railway)
 
-- ☐ Push to `bassyj32-ui/BunaPay`
-- ☐ Railway project from GitHub repo, env vars per 1.6
-- ☐ Deploy; UptimeRobot monitor on Railway URL (polling bot — process-alive check)
-- ☐ Supabase hosts DB (persistent across redeploys)
+- ☑ Push to `bassyj32-ui/BunaPay` (main; incl. `railway.json` → Nixpacks, start `python bot.py`, restart on failure)
+- ☑ Railway project from GitHub repo, env vars per 1.6 (first deploy crashed `ConfigError: Missing required env var: TELEGRAM_BOT_TOKEN` → all 7 vars set as separate entries → Live)
+- ☑ Deploy; local bot killed (0 processes) so no getUpdates 409 conflict; monitoring = Railway auto-restart (`ON_FAILURE`) + Sentry alerts — UptimeRobot N/A (polling bot has no HTTP endpoint)
+- ☑ Supabase hosts DB (persistent across redeploys)
 
 ---
 
