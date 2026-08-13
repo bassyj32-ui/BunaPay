@@ -871,18 +871,31 @@ class _QuietHandler(http.server.SimpleHTTPRequestHandler):
 def start_static_server() -> None:
     """Serve the webapp/ Mini App so one Railway service hosts bot + web app.
 
-    Uses PORT (Railway's public-networking port, default 3000). No-op locally
-    or when webapp/ is missing, so local dev keeps working unchanged.
+    Binds the Railway-injected PORT and also 3000 (the public-networking port)
+    so the listener always matches the generated domain. No-op locally or when
+    webapp/ is missing, so local dev keeps working unchanged.
     """
     webapp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "webapp")
     if not os.path.isdir(webapp_dir):
         logger.info("webapp/ not found — skipping static server")
         return
-    port = int(os.environ.get("PORT", "3000"))
-    handler = functools.partial(_QuietHandler, directory=webapp_dir)
-    server = http.server.ThreadingHTTPServer(("0.0.0.0", port), handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    logger.info("Mini App web server listening on port %s", port)
+    ports: list[int] = []
+    try:
+        ports.append(int(os.environ.get("PORT", "")))
+    except ValueError:
+        pass
+    if 3000 not in ports:
+        ports.append(3000)
+    bound: list[int] = []
+    for port in ports:
+        try:
+            handler = functools.partial(_QuietHandler, directory=webapp_dir)
+            server = http.server.ThreadingHTTPServer(("0.0.0.0", port), handler)
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            bound.append(port)
+        except OSError as exc:
+            logger.warning("Could not bind port %s: %s", port, exc)
+    logger.info("Mini App web server listening on ports %s (PORT env=%s)", bound, os.environ.get("PORT"))
 
 
 def main() -> None:
