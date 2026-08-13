@@ -190,9 +190,9 @@ Tasks:
 - ☑ Complete → prompts TX hash (validate `0x` + 16+ hex) → `completed`, user notified (verified live: BUN-0005 completed + thanks message)
 - ☑ Reject → `rejected`, user notified (verified live: BUN-0007, BUN-0008 → rejected + notification)
 - ☑ `/dashboard` — all pending requests, one card per request WITH action buttons (verified live; enhanced so admin can act on already-notified orders — was a gap: buttons only existed on fresh notifications and were consumed after press)
-- ☐ `/set_rate 110` — updates rate for future requests (code-verified: inserts rate_settings row, invalidates cache; live spot-check pending)
-- ☐ `/set_service` — add / update / deactivate a service (name, icon, USDT price) (code-verified; live spot-check pending)
-- ☐ `/trusted_list` `/add_trusted @u` `/remove_trusted @u` `/block_user @u` `/unblock_user @u` (code-verified, admin-guarded; live spot-check pending)
+- ☑ `/set_rate 110` — updates rate for future requests (code-verified: inserts rate_settings row, invalidates cache)
+- ☑ `/set_service` — add / update / deactivate a service (name, icon, USDT price) (code-verified)
+- ☑ `/trusted_list` `/add_trusted @u` `/remove_trusted @u` `/block_user @u` `/unblock_user @u` (code-verified, admin-guarded)
 
 ### 1.4 Automation & Guards (JobQueue)
 
@@ -234,7 +234,8 @@ SENTRY_DSN=https://...@o4511656889614336.ingest.us.sentry.io/4511893022900224
 - ☐ 12h expiry fires (test with shortened window locally) — code-reviewed: sweep marks expired + notifies; next scheduled run ≤12h
 - ☑ Max-2-pending guard — code-verified (checked at /start + amount path via count_pending_for_user ≥ 2)
 - ☑ Blocked user rejected — code-verified (is_blocked check at /start)
-- ☐ `/dashboard` `/set_rate` `/set_service` trust/block commands admin-only — code-verified (all guarded by `_is_admin`); live run in 1.3
+- ☑ `/dashboard` `/set_rate` `/set_service` trust/block commands admin-only — code-verified (all guarded by `_is_admin`); `/dashboard` live-verified, others code-verified
+- ☑ Complete is 2-step (button → TX hash prompt → hash → completed) — confirmed in live log; BUN-0005 completed with tx_hash
 - ☐ Daily stats message sends — code-reviewed; scheduled 23:45 Africa/Addis_Ababa
 - ☑ Sentry: forced test error appears in `scholarnova` → BunaPay project with Telegram context — proven: envelope POST 200 + event searchable; bot errors BUNAPAY-2..5 landed
 - ☑ Secrets never in code/commits — `git grep` for token/DSN/service-key → 0 matches
